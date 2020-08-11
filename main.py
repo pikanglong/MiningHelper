@@ -1,37 +1,80 @@
-import sys
-import time
 import ccxt
+import time
+import logging
+import requests
+import configparser
 
-time_interval = '1m'
-log_file = open('./log.txt', 'a+')
+logging.basicConfig(filename='main.log', format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
-exchange = ccxt.huobipro()
-exchange.apiKey = 'APIKEY'
-exchange.secret = 'SECRET'
+cp = configparser.ConfigParser()
+cp.read('main.conf')
 
-symbol = 'ZEC/USDT'
-base_coin = symbol.split('/')[-1]
-trade_coin = symbol.split('/')[0]
+huobi_apikey = cp.get('huobi', 'apiKey')
+huobi_secret = cp.get('huobi', 'secret')
 
-print('The script started successfully.')
+okex_apikey = cp.get('okex', 'apiKey')
+okex_secret = cp.get('okex', 'secret')
+okex_password = cp.get('okex', 'password')
 
+sckey = cp.get('serverchan', 'sckey')
+
+api = 'https://sc.ftqq.com/' + sckey + '.send'
+
+huobi = ccxt.huobipro({
+    'apiKey': huobi_apikey,
+    'secret': huobi_secret,
+})
+
+okex = ccxt.okex({
+    'apiKey': okex_apikey,
+    'secret': okex_secret,
+    'password': okex_password,
+})
+
+def send_message(api, title, content):
+    data = {
+        'text': title,
+        'desp': content
+    }
+    requests.post(api, data = data)
+
+def sell(exchange, symbol, trade_coin_amount):
+    for i in range(5):
+        try:
+            order_info = exchange.create_market_sell_order(symbol, trade_coin_amount)
+            logging.info('success: %s', order_info)
+            print('success:', order_info)
+            send_message(api, '出售成功', order_info)
+            break
+        except Exception as e:
+            logging.info('failed: %s', e)
+            print('failed:', e)
+            time.sleep(1)
+
+def solve(exchange, trade_coin, base_coin):
+    symbol = trade_coin + '/' + base_coin
+    try:
+        balance = exchange.fetch_balance()['total']
+        base_coin_amount = float(balance[base_coin])
+        if trade_coin in balance:
+            trade_coin_amount = float(balance[trade_coin])
+        else:
+            trade_coin_amount = float(0.0)
+        logging.info('current account value: %.8f%s %.8f%s', base_coin_amount, base_coin, trade_coin_amount, trade_coin)
+        
+        ticker = exchange.fetch_ticker(symbol)
+
+        if exchange == huobi and trade_coin_amount > 0.001 and trade_coin_amount * ticker['bid'] > 5:
+            sell(exchange, symbol, trade_coin_amount)
+
+        if exchange == okex and trade_coin_amount > 0.001:
+            sell(exchange, symbol, trade_coin_amount)
+
+    except Exception as e:
+        logging.info('error: %s', e)
+
+print('Script started...')
 while True:
-    balance = exchange.fetch_balance()['total']
-    base_coin_amount = float(balance[base_coin])
-    trade_coin_amount = float(balance[trade_coin])
-    print('{} | {:.8f}{} | {:.8f}{}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), base_coin_amount, base_coin, trade_coin_amount, trade_coin), file=log_file)
-
-    ticker = exchange.fetch_ticker(symbol)
-
-    if trade_coin_amount > 0.001 and trade_coin_amount * ticker['bid'] > 5:
-        for i in range(5):
-            try:
-                order_info = exchange.create_market_sell_order(symbol, trade_coin_amount)
-                print('success:', order_info, file=log_file)
-                break
-            except Exception as e:
-                print('failed:', e, file=log_file)
-                time.sleep(1)
-
-    sys.stdout.flush()
+    solve(huobi, 'ZEC', 'USDT')
+    solve(okex, 'BCH', 'USDT')
     time.sleep(10)

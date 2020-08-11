@@ -1,0 +1,11 @@
+[huobi]
+apiKey = ABCDEFG
+secret = HIJKLMN
+
+[okex]
+apiKey = OPQ
+secret = RST
+password = UVW
+
+[serverchan]
+sckey = XYZ
