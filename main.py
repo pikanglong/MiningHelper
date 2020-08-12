@@ -1,4 +1,5 @@
 import ccxt
+import json
 import time
 import logging
 import requests
@@ -43,11 +44,11 @@ def sell(exchange, symbol, trade_coin_amount):
         try:
             order_info = exchange.create_market_sell_order(symbol, trade_coin_amount)
             logging.info('success: %s', order_info)
-            print('success:', order_info)
+            print('success:', json.dumps(order_info))
             send_message(api, '出售成功', order_info)
             break
         except Exception as e:
-            logging.info('failed: %s', e)
+            logging.error('failed: %s', e)
             print('failed:', e)
             time.sleep(1)
 
@@ -71,7 +72,7 @@ def solve(exchange, trade_coin, base_coin):
             sell(exchange, symbol, trade_coin_amount)
 
     except Exception as e:
-        logging.info('error: %s', e)
+        logging.error('%s', e)
 
 print('Script started...')
 while True:
