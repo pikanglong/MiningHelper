@@ -44,8 +44,8 @@ def sell(exchange, symbol, trade_coin_amount):
         try:
             order_info = exchange.create_market_sell_order(symbol, trade_coin_amount)
             logging.info('success: %s', order_info)
-            print('success:', json.dumps(order_info))
-            send_message(api, '出售成功', order_info)
+            print('success:', order_info)
+            send_message(api, '出售成功', json.dumps(order_info))
             break
         except Exception as e:
             logging.error('failed: %s', e)
@@ -73,6 +73,7 @@ def solve(exchange, trade_coin, base_coin):
 
     except Exception as e:
         logging.error('%s', e)
+        print(e)
 
 print('Script started...')
 while True:
