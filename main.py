@@ -24,12 +24,20 @@ api = 'https://sc.ftqq.com/' + sckey + '.send'
 huobi = ccxt.huobipro({
     'apiKey': huobi_apikey,
     'secret': huobi_secret,
+    'proxies': {
+        'http': 'http://localhost:33066',
+        'https': 'http://localhost:33066',
+    },
 })
 
 okex = ccxt.okex({
     'apiKey': okex_apikey,
     'secret': okex_secret,
     'password': okex_password,
+    'proxies': {
+        'http': 'http://localhost:33066',
+        'https': 'http://localhost:33066',
+    },
 })
 
 def send_message(api, title, content):
@@ -68,7 +76,7 @@ def solve(exchange, trade_coin, base_coin):
         if exchange == huobi and trade_coin_amount > 0.001 and trade_coin_amount * ticker['bid'] > 5:
             sell(exchange, symbol, trade_coin_amount)
 
-        if exchange == okex and trade_coin_amount > 0.001:
+        if exchange == okex and trade_coin_amount > 0.01:
             sell(exchange, symbol, trade_coin_amount)
 
     except Exception as e:
